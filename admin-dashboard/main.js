@@ -9,9 +9,16 @@ const idlFile = document.getElementById('idlFile');
 
 let provider = null;
 let program = null;
-let idl = null;
 
 const log = (m) => (logEl.textContent = `[${new Date().toISOString()}] ${m}\n` + logEl.textContent);
+const parseU64 = (s) => new anchor.BN(s || '0');
+const toPk = (s) => new PublicKey(s);
+const hexToBytes32 = (hex) => {
+  if (hex.length !== 64) throw new Error('oracleFeedId must be 64 hex chars');
+  return Array.from(new Uint8Array(hex.match(/.{1,2}/g).map((b) => parseInt(b, 16))));
+};
+const parseAccountsJson = (txt) => JSON.parse(txt || '{}');
+const parseRemainingJson = (txt) => (txt ? JSON.parse(txt).map((k) => ({ pubkey: toPk(k), isSigner: false, isWritable: true })) : []);
 
 connectBtn.onclick = async () => {
   if (!window.solana?.isPhantom) return log('Phantom wallet not found');
@@ -23,8 +30,7 @@ connectBtn.onclick = async () => {
 loadProgramBtn.onclick = async () => {
   const file = idlFile.files?.[0];
   if (!file) return log('Please upload generated IDL JSON first');
-  idl = JSON.parse(await file.text());
-
+  const idl = JSON.parse(await file.text());
   const rpc = document.getElementById('rpcUrl').value.trim();
   const pid = document.getElementById('programId').value.trim();
   const connection = new Connection(rpc, 'confirmed');
@@ -34,16 +40,9 @@ loadProgramBtn.onclick = async () => {
   log('Program client loaded');
 };
 
-const parseU64 = (s) => new anchor.BN(s || '0');
-const toPk = (s) => new PublicKey(s);
-const hexToBytes32 = (hex) => {
-  if (hex.length !== 64) throw new Error('oracleFeedId must be 64 hex chars');
-  return Array.from(new Uint8Array(hex.match(/.{1,2}/g).map((b) => parseInt(b, 16))));
-};
-
-async function send(methodName, args, accounts) {
+async function send(methodName, args, accounts, remainingAccounts = []) {
   if (!program) throw new Error('Load IDL/program first');
-  const tx = await program.methods[methodName](...args).accounts(accounts).rpc();
+  const tx = await program.methods[methodName](...args).accounts(accounts).remainingAccounts(remainingAccounts).rpc();
   log(`${methodName} sent: ${tx}`);
 }
 
@@ -54,9 +53,21 @@ document.querySelectorAll('form').forEach((form) => {
       const fd = new FormData(form);
       const vaultState = toPk(document.getElementById('vaultState').value.trim());
       const signer = window.solana.publicKey;
-
       const method = form.dataset.method;
-      if (method === 'addStrategy') {
+
+      if (method === 'depositUser') {
+        const accounts = parseAccountsJson(fd.get('accountsJson'));
+        const mapped = Object.fromEntries(Object.entries(accounts).map(([k, v]) => [k, toPk(v)]));
+        await send('deposit', [parseU64(fd.get('maxAmount'))], mapped, parseRemainingJson(fd.get('remainingJson')));
+      } else if (method === 'withdrawUser') {
+        const accounts = parseAccountsJson(fd.get('accountsJson'));
+        const mapNode = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, typeof v === 'object' ? mapNode(v) : toPk(v)]));
+        await send('withdraw', [parseU64(fd.get('sharesAmount'))], mapNode(accounts), parseRemainingJson(fd.get('remainingJson')));
+      } else if (method === 'withdrawFromAvailableUser') {
+        const accounts = parseAccountsJson(fd.get('accountsJson'));
+        const mapped = Object.fromEntries(Object.entries(accounts).map(([k, v]) => [k, toPk(v)]));
+        await send('withdrawFromAvailable', [parseU64(fd.get('sharesAmount'))], mapped, parseRemainingJson(fd.get('remainingJson')));
+      } else if (method === 'addStrategy') {
         await send('addStrategy', [toPk(fd.get('strategyId')), Number(fd.get('strategyType')), parseU64(fd.get('weight')), parseU64(fd.get('cap'))], { signer, vaultState });
       } else if (method === 'updateStrategy') {
         await send('updateStrategy', [toPk(fd.get('strategyId')), parseU64(fd.get('newWeight')), parseU64(fd.get('newCap'))], { signer, vaultState });
@@ -71,7 +82,7 @@ document.querySelectorAll('form').forEach((form) => {
       } else if (method === 'updateAdmin') {
         await send('updateAdmin', [], { adminAuthority: signer, vaultState });
       } else if (method === 'withdrawPendingFees') {
-        log('withdraw_pending_fees requires additional token accounts; use advanced account injector extension.');
+        log('withdraw_pending_fees requires extended account JSON support (pending).');
       } else if (method === 'giveUpPendingFees') {
         await send('giveUpPendingFees', [parseU64(fd.get('maxAmountToGiveUp'))], { signer, vaultState });
       }

@@ -46,3 +46,14 @@ A lightweight admin dashboard is available at `admin-dashboard/`.
 4. Upload your generated Anchor IDL JSON.
 5. Set RPC URL, Program ID, and Vault State account.
 6. Use forms to invoke admin instructions (`add_strategy`, `update_strategy`, `remove_strategy`, `update_strategy_oracle`, `rebalance_vault`, `refresh_strategy_nav`, etc.).
+
+
+### End-user relevant instructions
+
+User-facing flows currently exposed in the dashboard:
+
+- `deposit(max_amount)` / `buy(max_amount)` for minting shares.
+- `withdraw(shares_amount)` / `sell(shares_amount)` for redeeming deposit token.
+- `withdraw_from_available(shares_amount)` for liquid-only redemption path.
+
+Note: user instructions require more accounts than strategy-admin methods (vault/user token ATAs, share mint/accounts, authority/token programs, and reserve-related remaining accounts where applicable). The dashboard supports these via JSON account inputs in the user section.

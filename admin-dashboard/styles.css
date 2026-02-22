@@ -7,3 +7,7 @@ form { border:1px solid #334155; border-radius:8px; padding:10px; display:flex; 
 input, button { padding:8px; border-radius:6px; border:1px solid #475569; background:#0b1220; color:#e2e8f0; }
 button { background:#2563eb; border:none; cursor:pointer; }
 pre { background:#020617; border:1px solid #334155; border-radius:8px; padding:12px; min-height:140px; white-space:pre-wrap; }
+
+textarea { width:100%; resize:vertical; }
+.hint { color:#94a3b8; margin-top:-4px; }
+code { background:#0b1220; padding:2px 4px; border-radius:4px; }
