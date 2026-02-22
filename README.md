@@ -41,7 +41,9 @@ A lightweight admin dashboard is available at `admin-dashboard/`.
 ### Usage
 
 1. Serve the folder with any static file server (for example: `python3 -m http.server 4173` from repo root).
-2. Open `http://localhost:4173/admin-dashboard/`.
+2. Open one of:
+   - Admin page: `http://localhost:4173/admin-dashboard/index.html`
+   - User page: `http://localhost:4173/admin-dashboard/user.html`
 3. Connect Phantom wallet.
 4. Upload your generated Anchor IDL JSON.
 5. Set RPC URL, Program ID, and Vault State account.
@@ -56,4 +58,4 @@ User-facing flows currently exposed in the dashboard:
 - `withdraw(shares_amount)` / `sell(shares_amount)` for redeeming deposit token.
 - `withdraw_from_available(shares_amount)` for liquid-only redemption path.
 
-Note: user instructions require more accounts than strategy-admin methods (vault/user token ATAs, share mint/accounts, authority/token programs, and reserve-related remaining accounts where applicable). The dashboard supports these via JSON account inputs in the user section.
+Note: user instructions require more accounts than strategy-admin methods (vault/user token ATAs, share mint/accounts, authority/token programs, and reserve-related remaining accounts where applicable). The user page supports these via JSON account inputs in the user section.

@@ -8,7 +8,11 @@
   </head>
   <body>
     <header>
-      <h1>K1 Vault Admin + User Dashboard</h1>
+      <h1>K1 Vault Admin Dashboard</h1>
+      <nav class="row">
+        <a class="navlink" href="./index.html">Admin page</a>
+        <a class="navlink" href="./user.html">User page</a>
+      </nav>
       <div class="row">
         <label>RPC URL <input id="rpcUrl" value="https://api.devnet.solana.com" /></label>
         <label>Program ID <input id="programId" placeholder="Program public key" /></label>
@@ -23,37 +27,7 @@
     </header>
 
     <main>
-      <section>
-        <h2>User Mint / Redeem</h2>
-        <p class="hint">Mint is via <code>deposit</code>/<code>buy</code>. Redeem is via <code>withdraw</code>/<code>sell</code> or <code>withdraw_from_available</code>.</p>
-        <div class="grid">
-          <form data-method="depositUser">
-            <h3>deposit (mint shares)</h3>
-            <input name="maxAmount" placeholder="max_amount (u64)" required />
-            <textarea name="accountsJson" rows="6" placeholder='accounts JSON, e.g. {"user":"...","vaultState":"...","tokenVault":"...","tokenMint":"...","baseVaultAuthority":"...","userTokenAta":"...","userSharesAta":"...","sharesMint":"...","tokenProgram":"...","sharesTokenProgram":"...","klendProgram":"..."}' required></textarea>
-            <textarea name="remainingJson" rows="3" placeholder='remaining accounts JSON array, e.g. ["reserve1","reserve2",...]'></textarea>
-            <button>Send</button>
-          </form>
-
-          <form data-method="withdrawUser">
-            <h3>withdraw (redeem shares)</h3>
-            <input name="sharesAmount" placeholder="shares_amount (u64)" required />
-            <textarea name="accountsJson" rows="7" placeholder='accounts JSON for Withdraw context: {"withdrawFromAvailable":{"user":"...",...},"withdrawFromReserveAccounts":{"vaultState":"...","reserve":"...",...}}' required></textarea>
-            <textarea name="remainingJson" rows="3" placeholder='remaining accounts JSON array'></textarea>
-            <button>Send</button>
-          </form>
-
-          <form data-method="withdrawFromAvailableUser">
-            <h3>withdraw_from_available</h3>
-            <input name="sharesAmount" placeholder="shares_amount (u64)" required />
-            <textarea name="accountsJson" rows="6" placeholder='accounts JSON for WithdrawFromAvailable context' required></textarea>
-            <textarea name="remainingJson" rows="3" placeholder='remaining accounts JSON array'></textarea>
-            <button>Send</button>
-          </form>
-        </div>
-      </section>
-
-      <section>
+            <section>
         <h2>Strategy Admin</h2>
         <div class="grid">
           <form data-method="addStrategy">
