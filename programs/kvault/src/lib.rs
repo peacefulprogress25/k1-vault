@@ -157,6 +157,33 @@ pub mod kamino_vault {
     ) -> Result<()> {
         handler_add_update_whitelisted_reserve::process(ctx, update)
     }
+
+    pub fn add_strategy(
+        ctx: Context<ManageStrategy>,
+        strategy_id: Pubkey,
+        strategy_type: u8,
+        weight: u64,
+        cap: u64,
+    ) -> Result<()> {
+        handlers::handler_strategy_admin::add_strategy(ctx, strategy_id, strategy_type, weight, cap)
+    }
+
+    pub fn update_strategy(
+        ctx: Context<ManageStrategy>,
+        strategy_id: Pubkey,
+        new_weight: u64,
+        new_cap: u64,
+    ) -> Result<()> {
+        handlers::handler_strategy_admin::update_strategy(ctx, strategy_id, new_weight, new_cap)
+    }
+
+    pub fn remove_strategy(ctx: Context<ManageStrategy>, strategy_id: Pubkey) -> Result<()> {
+        handlers::handler_strategy_admin::remove_strategy(ctx, strategy_id)
+    }
+
+    pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
+        handlers::handler_strategy_admin::rebalance_vault(ctx)
+    }
 }
 
 #[error_code]
@@ -240,6 +267,21 @@ pub enum KaminoVaultError {
 
     #[msg("BPS value is greater than 10000")]
     BPSValueTooBig,
+
+    #[msg("Strategy already exists")]
+    StrategyAlreadyExists,
+
+    #[msg("Strategy was not found")]
+    StrategyNotFound,
+
+    #[msg("No capacity left for additional strategies")]
+    StrategySpaceExhausted,
+
+    #[msg("Total strategy weight must be <= 10,000")]
+    TotalStrategyWeightTooBig,
+
+    #[msg("Cannot remove strategy while invested amount is non-zero")]
+    StrategyNotUnwound,
 
     #[msg("Deposited amount is below minimum")]
     DepositAmountBelowMinimum,

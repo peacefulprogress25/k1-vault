@@ -5,3 +5,5 @@ pub mod vault_checks;
 pub mod vault_config_operations;
 pub mod vault_operations;
 
+
+pub mod strategy_adapter;

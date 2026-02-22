@@ -6,7 +6,7 @@ use crate::{
     utils::{
         consts::{
             GLOBAL_CONFIG_SIZE, MAX_WITHDRAWAL_PENALTY_BPS, MAX_WITHDRAWAL_PENALTY_LAMPORTS,
-            RESERVE_WHITELIST_ENTRY_SIZE, VAULT_ALLOCATION_SIZE, VAULT_STATE_SIZE,
+            RESERVE_WHITELIST_ENTRY_SIZE, VAULT_ALLOCATION_SIZE,
         },
         global_config::UpdateGlobalConfigMode,
     },
@@ -15,6 +15,7 @@ use crate::{
 use bytemuck::Zeroable;
 
 pub const MAX_RESERVES: usize = 25;
+pub const MAX_STRATEGIES: usize = 32;
 
 static_assertions::const_assert_eq!(GLOBAL_CONFIG_SIZE, std::mem::size_of::<GlobalConfig>());
 static_assertions::const_assert_eq!(0, std::mem::size_of::<GlobalConfig>() % 8);
@@ -90,8 +91,6 @@ impl GlobalConfig {
     }
 }
 
-static_assertions::const_assert_eq!(VAULT_STATE_SIZE, std::mem::size_of::<VaultState>());
-static_assertions::const_assert_eq!(0, std::mem::size_of::<VaultState>() % 16);
 #[account(zero_copy)]
 #[derive(AnchorDeserialize, PartialEq, Eq)]
 pub struct VaultState {
@@ -123,6 +122,10 @@ pub struct VaultState {
     pub prev_aum_sf: u128,
     // todo: should we split this into pending_mgmt_fee and pending_perf_fee?
     pub pending_fees_sf: u128,
+
+    // K1 multi-strategy extension
+    pub strategy_count: u64,
+    pub strategies: [StrategyEntry; MAX_STRATEGIES],
 
     pub vault_allocation_strategy: [VaultAllocation; MAX_RESERVES],
     pub padding_1: [u128; 256],
@@ -190,6 +193,41 @@ impl VaultState {
             .iter()
             .filter(|r| r.reserve != Pubkey::default())
             .count()
+    }
+
+    pub fn get_strategies_count(&self) -> usize {
+        self.strategies
+            .iter()
+            .filter(|s| s.strategy_id != Pubkey::default())
+            .count()
+    }
+
+    pub fn get_strategy_idx(&self, strategy_id: &Pubkey) -> Option<usize> {
+        self.strategies.iter().position(|s| &s.strategy_id == strategy_id)
+    }
+
+    pub fn compute_total_nav(&self) -> Result<u128> {
+        let mut total_nav = u128::from(self.token_available);
+        for strategy in self.strategies.iter() {
+            if strategy.strategy_id != Pubkey::default() {
+                total_nav = total_nav
+                    .checked_add(strategy.last_nav)
+                    .ok_or(KaminoVaultError::MathOverflow)?;
+            }
+        }
+        Ok(total_nav)
+    }
+
+    pub fn total_strategy_weight(&self) -> Result<u64> {
+        let mut total_weight = 0u64;
+        for strategy in self.strategies.iter() {
+            if strategy.strategy_id != Pubkey::default() {
+                total_weight = total_weight
+                    .checked_add(strategy.target_weight)
+                    .ok_or(KaminoVaultError::MathOverflow)?;
+            }
+        }
+        Ok(total_weight)
     }
 
     pub fn get_reserves_with_allocation_count(&self) -> usize {
@@ -508,6 +546,35 @@ impl VaultState {
                 Ok(())
             }
             None => err!(KaminoVaultError::ReserveNotPartOfAllocations),
+        }
+    }
+}
+
+
+
+#[zero_copy]
+#[derive(AnchorDeserialize, Debug, PartialEq, Eq)]
+#[repr(C)]
+pub struct StrategyEntry {
+    pub strategy_id: Pubkey,
+    pub strategy_type: u8,
+    pub _padding: [u8; 7],
+    pub target_weight: u64,
+    pub allocation_cap: u64,
+    pub invested_amount: u64,
+    pub last_nav: u128,
+}
+
+impl Default for StrategyEntry {
+    fn default() -> Self {
+        Self {
+            strategy_id: Pubkey::default(),
+            strategy_type: 0,
+            _padding: [0; 7],
+            target_weight: 0,
+            allocation_cap: 0,
+            invested_amount: 0,
+            last_nav: 0,
         }
     }
 }
