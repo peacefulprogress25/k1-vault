@@ -209,6 +209,101 @@ pub mod withdraw_utils {
                 (0, 0)
             };
 
+
+        if vault_state.vault_mode == 1 {
+            let shares_amount = std::cmp::min(shares_amount, user_shares_before);
+            let shares_to_withdraw_event = SharesToWithdrawEvent {
+                shares_amount,
+                user_shares_before,
+            };
+            require!(shares_amount > 0, KaminoVaultError::CannotWithdrawZeroShares);
+
+            let now_ts = Clock::get()?.unix_timestamp as u64;
+            let total_nav = vault_state.compute_total_nav_checked(now_ts)?;
+            require!(total_nav > 0, KaminoVaultError::VaultAUMZero);
+
+            let total_shares_supply = vault_state.shares_issued;
+            require!(total_shares_supply > 0, KaminoVaultError::CannotWithdrawFromEmptyVault);
+
+            let mut total_for_user = if total_shares_supply == shares_amount {
+                total_nav as u64
+            } else {
+                ((total_nav * u128::from(shares_amount)) / u128::from(total_shares_supply)) as u64
+            };
+
+            let withdrawal_penalty_lamports = global_config
+                .withdrawal_penalty_lamports
+                .max(vault_state.withdrawal_penalty_lamports);
+            let withdrawal_penalty_bps = global_config
+                .withdrawal_penalty_bps
+                .max(vault_state.withdrawal_penalty_bps);
+            let withdrawal_penalty = vault_operations::common::get_withdrawal_penalty(
+                total_for_user,
+                withdrawal_penalty_lamports,
+                withdrawal_penalty_bps,
+            );
+            require!(withdrawal_penalty < total_for_user, KaminoVaultError::WithdrawAmountLessThanWithdrawalPenalty);
+            total_for_user -= withdrawal_penalty;
+
+            let mut available = vault_state.token_available;
+            let mut to_unwind = total_for_user.saturating_sub(available);
+            let mut unwound = 0u64;
+            for strategy in vault_state.strategies.iter_mut() {
+                if to_unwind == 0 {
+                    break;
+                }
+                if strategy.strategy_id == Pubkey::default() || strategy.enabled == 0 {
+                    continue;
+                }
+                let amount = strategy.invested_amount.min(to_unwind);
+                if amount == 0 {
+                    continue;
+                }
+                strategy.invested_amount = strategy.invested_amount.saturating_sub(amount);
+                strategy.last_nav = u128::from(strategy.invested_amount);
+                strategy.last_nav_timestamp = now_ts;
+                available = available.saturating_add(amount);
+                unwound = unwound.saturating_add(amount);
+                to_unwind = to_unwind.saturating_sub(amount);
+            }
+            require!(available >= total_for_user, KaminoVaultError::NotEnoughLiquidityDisinvestedToSendToUser);
+
+            shares::burn(
+                withdraw_from_available_accounts.shares_mint.to_account_info(),
+                withdraw_from_available_accounts.user_shares_ata.to_account_info(),
+                withdraw_from_available_accounts.user.to_account_info(),
+                withdraw_from_available_accounts.shares_token_program.to_account_info(),
+                shares_amount,
+            )?;
+
+            token_ops::tokens::transfer_to_token_account(
+                &token_ops::tokens::VaultTransferAccounts {
+                    token_program: withdraw_from_available_accounts.token_program.to_account_info(),
+                    token_vault: withdraw_from_available_accounts.token_vault.to_account_info(),
+                    token_ata: withdraw_from_available_accounts.user_token_ata.to_account_info(),
+                    token_mint: withdraw_from_available_accounts.token_mint.to_account_info(),
+                    base_vault_authority: withdraw_from_available_accounts.base_vault_authority.to_account_info(),
+                    vault_state: withdraw_from_available_accounts.vault_state.to_account_info(),
+                },
+                u8::try_from(vault_state.base_vault_authority_bump).unwrap(),
+                total_for_user,
+                u8::try_from(vault_state.token_mint_decimals).unwrap(),
+            )?;
+
+            vault_state.token_available = available.saturating_sub(total_for_user);
+            vault_state.shares_issued = vault_state.shares_issued.saturating_sub(shares_amount);
+            vault_state.prev_aum_sf = vault_state.compute_total_nav()?;
+
+            let withdraw_result_event = WithdrawResultEvent {
+                shares_to_burn: shares_amount,
+                available_to_send_to_user: total_for_user,
+                invested_to_disinvest_ctokens: unwound,
+                invested_liquidity_to_send_to_user: 0,
+            };
+
+            return Ok((shares_to_withdraw_event, withdraw_result_event));
+        }
+
         // if the user asks to withdraw more shares than they have, withdraw all the shares they have
         let shares_amount = std::cmp::min(shares_amount, user_shares_before);
         let shares_to_withdraw_event = SharesToWithdrawEvent {

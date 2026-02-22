@@ -7,7 +7,7 @@ pub const EVENT_AUTHORITY: &[u8] = b"__event_authority";
 pub const GLOBAL_CONFIG_STATE_SEEDS: &[u8] = b"global_config";
 pub const WHITELISTED_RESERVES_SEED: &[u8] = b"whitelisted_reserves";
 
-pub const VAULT_STATE_SIZE: usize = 62544;
+pub const VAULT_STATE_SIZE: usize = 70000;
 pub const VAULT_ALLOCATION_SIZE: usize = 2160;
 pub const GLOBAL_CONFIG_SIZE: usize = 1024;
 pub const RESERVE_WHITELIST_ENTRY_SIZE: usize = 128;

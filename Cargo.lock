@@ -1430,6 +1430,7 @@ dependencies = [
  "fixed-macro",
  "kamino_lending",
  "num_enum 0.7.1",
+ "pyth-solana-receiver-sdk",
  "rust_decimal",
  "serde",
  "solana-program",

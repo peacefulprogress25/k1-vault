@@ -25,6 +25,9 @@ pub fn process(ctx: Context<InitVault>) -> Result<()> {
     vault.base_vault_authority = ctx.accounts.base_vault_authority.key();
     vault.shares_mint = ctx.accounts.shares_mint.key();
     vault.base_vault_authority_bump = u64::from(ctx.bumps.base_vault_authority);
+    vault.max_nav_age_sec = 3600;
+    vault.last_nav_refresh_ts = 0;
+    vault.vault_mode = 0;
 
     let clock = &Clock::get()?;
     vault_operations::initialize(
