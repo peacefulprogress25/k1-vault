@@ -218,6 +218,9 @@ pub mod kamino_vault {
             max_price_age_sec,
         )
     }
+    pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
+        handlers::handler_strategy_admin::rebalance_vault(ctx)
+    }
 }
 
 #[error_code]
@@ -316,18 +319,6 @@ pub enum KaminoVaultError {
 
     #[msg("Cannot remove strategy while invested amount is non-zero")]
     StrategyNotUnwound,
-
-    #[msg("Strategy NAV is stale")]
-    StrategyNavStale,
-
-    #[msg("Strategy is disabled")]
-    StrategyDisabled,
-
-    #[msg("Oracle price is invalid or stale")]
-    OraclePriceInvalid,
-
-    #[msg("Oracle confidence is too high for this strategy")]
-    OracleConfidenceTooHigh,
 
     #[msg("Deposited amount is below minimum")]
     DepositAmountBelowMinimum,

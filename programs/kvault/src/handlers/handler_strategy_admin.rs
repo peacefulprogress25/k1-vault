@@ -155,7 +155,6 @@ pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
                 .checked_add(alloc)
                 .ok_or(KaminoVaultError::MathOverflow)?;
             vault.strategies[idx].last_nav = u128::from(vault.strategies[idx].invested_amount);
-            vault.strategies[idx].last_nav_timestamp = now_ts;
             token_available = token_available
                 .checked_sub(alloc)
                 .ok_or(KaminoVaultError::MathOverflow)?;
@@ -166,7 +165,6 @@ pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
                 .checked_sub(excess)
                 .ok_or(KaminoVaultError::MathOverflow)?;
             vault.strategies[idx].last_nav = u128::from(vault.strategies[idx].invested_amount);
-            vault.strategies[idx].last_nav_timestamp = now_ts;
             token_available = token_available
                 .checked_add(excess)
                 .ok_or(KaminoVaultError::MathOverflow)?;
@@ -175,7 +173,6 @@ pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
     vault.token_available = token_available;
 
     vault.prev_aum_sf = vault.compute_total_nav()?;
-    vault.last_nav_refresh_ts = now_ts;
     Ok(())
 }
 
