@@ -32,11 +32,20 @@ pub fn add_strategy(
     vault.strategies[idx] = StrategyEntry {
         strategy_id,
         strategy_type,
-        _padding: [0; 7],
+        token_decimals: 6,
+        withdraw_priority: 1000,
+        enabled: 1,
+        _padding: [0; 3],
         target_weight: weight,
         allocation_cap: cap,
         invested_amount: 0,
         last_nav: 0,
+        last_nav_timestamp: 0,
+        oracle_price_feed: Pubkey::default(),
+        oracle_feed_id: [0; 32],
+        strategy_token_mint: Pubkey::default(),
+        max_oracle_conf_bps: 500,
+        _oracle_padding: [0; 6],
     };
     vault.strategy_count = vault.get_strategies_count() as u64;
 
@@ -71,6 +80,33 @@ pub fn update_strategy(
     Ok(())
 }
 
+
+pub fn update_strategy_oracle(
+    ctx: Context<ManageStrategy>,
+    strategy_id: Pubkey,
+    oracle_price_feed: Pubkey,
+    oracle_feed_id: [u8; 32],
+    strategy_token_mint: Pubkey,
+    token_decimals: u8,
+    withdraw_priority: u16,
+    max_oracle_conf_bps: u16,
+) -> Result<()> {
+    let vault = &mut ctx.accounts.vault_state.load_mut()?;
+    require_keys_eq!(ctx.accounts.signer.key(), vault.vault_admin_authority);
+
+    let idx = vault
+        .get_strategy_idx(&strategy_id)
+        .ok_or(KaminoVaultError::StrategyNotFound)?;
+    vault.strategies[idx].oracle_price_feed = oracle_price_feed;
+    vault.strategies[idx].oracle_feed_id = oracle_feed_id;
+    vault.strategies[idx].strategy_token_mint = strategy_token_mint;
+    vault.strategies[idx].token_decimals = token_decimals;
+    vault.strategies[idx].withdraw_priority = withdraw_priority;
+    vault.strategies[idx].max_oracle_conf_bps = max_oracle_conf_bps;
+
+    Ok(())
+}
+
 pub fn remove_strategy(ctx: Context<ManageStrategy>, strategy_id: Pubkey) -> Result<()> {
     let vault = &mut ctx.accounts.vault_state.load_mut()?;
     require_keys_eq!(ctx.accounts.signer.key(), vault.vault_admin_authority);
@@ -96,6 +132,7 @@ pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
         return Ok(());
     }
 
+    let now_ts = Clock::get()?.unix_timestamp as u64;
     let aum = vault.compute_total_nav()?;
 
     let mut token_available = vault.token_available;

@@ -91,6 +91,7 @@ impl GlobalConfig {
     }
 }
 
+static_assertions::const_assert_eq!(0, std::mem::size_of::<VaultState>() % 16);
 #[account(zero_copy)]
 #[derive(AnchorDeserialize, PartialEq, Eq)]
 pub struct VaultState {
@@ -125,6 +126,10 @@ pub struct VaultState {
 
     // K1 multi-strategy extension
     pub strategy_count: u64,
+    pub max_nav_age_sec: u64,
+    pub last_nav_refresh_ts: u64,
+    pub vault_mode: u8, // 0 legacy reserve mode, 1 strategy mode
+    pub _strategy_padding: [u8; 7],
     pub strategies: [StrategyEntry; MAX_STRATEGIES],
 
     pub vault_allocation_strategy: [VaultAllocation; MAX_RESERVES],
@@ -210,6 +215,23 @@ impl VaultState {
         let mut total_nav = u128::from(self.token_available);
         for strategy in self.strategies.iter() {
             if strategy.strategy_id != Pubkey::default() {
+                total_nav = total_nav
+                    .checked_add(strategy.last_nav)
+                    .ok_or(KaminoVaultError::MathOverflow)?;
+            }
+        }
+        Ok(total_nav)
+    }
+
+
+    pub fn compute_total_nav_checked(&self, now_ts: u64) -> Result<u128> {
+        let mut total_nav = u128::from(self.token_available);
+        for strategy in self.strategies.iter() {
+            if strategy.strategy_id != Pubkey::default() && strategy.enabled == 1 {
+                if self.max_nav_age_sec > 0 {
+                    let age = now_ts.saturating_sub(strategy.last_nav_timestamp);
+                    require_gte!(self.max_nav_age_sec, age, KaminoVaultError::StrategyNavStale);
+                }
                 total_nav = total_nav
                     .checked_add(strategy.last_nav)
                     .ok_or(KaminoVaultError::MathOverflow)?;
@@ -558,11 +580,21 @@ impl VaultState {
 pub struct StrategyEntry {
     pub strategy_id: Pubkey,
     pub strategy_type: u8,
+    pub token_decimals: u8,
+    pub withdraw_priority: u16,
+    pub enabled: u8,
+    pub _padding: [u8; 3],
     pub _padding: [u8; 7],
     pub target_weight: u64,
     pub allocation_cap: u64,
     pub invested_amount: u64,
     pub last_nav: u128,
+    pub last_nav_timestamp: u64,
+    pub oracle_price_feed: Pubkey,
+    pub oracle_feed_id: [u8; 32],
+    pub strategy_token_mint: Pubkey,
+    pub max_oracle_conf_bps: u16,
+    pub _oracle_padding: [u8; 6],
 }
 
 impl Default for StrategyEntry {
@@ -570,11 +602,21 @@ impl Default for StrategyEntry {
         Self {
             strategy_id: Pubkey::default(),
             strategy_type: 0,
+            token_decimals: 6,
+            withdraw_priority: 0,
+            enabled: 1,
+            _padding: [0; 3],
             _padding: [0; 7],
             target_weight: 0,
             allocation_cap: 0,
             invested_amount: 0,
             last_nav: 0,
+            last_nav_timestamp: 0,
+            oracle_price_feed: Pubkey::default(),
+            oracle_feed_id: [0; 32],
+            strategy_token_mint: Pubkey::default(),
+            max_oracle_conf_bps: 500,
+            _oracle_padding: [0; 6],
         }
     }
 }

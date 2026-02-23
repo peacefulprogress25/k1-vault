@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K1 Vault Admin Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>K1 Vault Admin Dashboard</h1>
+      <nav class="row">
+        <a class="navlink" href="./index.html">Admin page</a>
+        <a class="navlink" href="./user.html">User page</a>
+      </nav>
+      <div class="row">
+        <label>RPC URL <input id="rpcUrl" value="https://api.devnet.solana.com" /></label>
+        <label>Program ID <input id="programId" placeholder="Program public key" /></label>
+        <label>Vault State <input id="vaultState" placeholder="Vault state pubkey" /></label>
+      </div>
+      <div class="row">
+        <button id="connectBtn">Connect Phantom</button>
+        <button id="loadProgramBtn">Load IDL + Program</button>
+        <input type="file" id="idlFile" accept="application/json" />
+      </div>
+      <p id="walletStatus">Wallet: not connected</p>
+    </header>
+
+    <main>
+            <section>
+        <h2>Strategy Admin</h2>
+        <div class="grid">
+          <form data-method="addStrategy">
+            <h3>add_strategy</h3>
+            <input name="strategyId" placeholder="strategy_id" required />
+            <input name="strategyType" placeholder="strategy_type (u8)" required />
+            <input name="weight" placeholder="weight (u64)" required />
+            <input name="cap" placeholder="cap (u64)" required />
+            <button>Send</button>
+          </form>
+          <form data-method="updateStrategy"><h3>update_strategy</h3><input name="strategyId" placeholder="strategy_id" required /><input name="newWeight" placeholder="new_weight" required /><input name="newCap" placeholder="new_cap" required /><button>Send</button></form>
+          <form data-method="removeStrategy"><h3>remove_strategy</h3><input name="strategyId" placeholder="strategy_id" required /><button>Send</button></form>
+          <form data-method="updateStrategyOracle"><h3>update_strategy_oracle</h3><input name="strategyId" placeholder="strategy_id" required /><input name="oraclePriceFeed" placeholder="oracle_price_feed" required /><input name="oracleFeedId" placeholder="oracle_feed_id (64 hex chars, no 0x)" required /><input name="strategyTokenMint" placeholder="strategy_token_mint" required /><input name="tokenDecimals" placeholder="token_decimals" required /><input name="withdrawPriority" placeholder="withdraw_priority" required /><input name="maxOracleConfBps" placeholder="max_oracle_conf_bps (e.g. 500)" required /><button>Send</button></form>
+          <form data-method="rebalanceVault"><h3>rebalance_vault</h3><button>Send</button></form>
+          <form data-method="refreshStrategyNav"><h3>refresh_strategy_nav</h3><input name="strategyId" placeholder="strategy_id" required /><input name="maxPriceAgeSec" placeholder="max_price_age_sec" required /><input name="priceUpdate" placeholder="price_update account" required /><input name="strategyTokenAccount" placeholder="strategy_token_account" required /><input name="tokenProgram" placeholder="token_program" required /><button>Send</button></form>
+        </div>
+      </section>
+
+      <section>
+        <h2>Global / Vault Admin</h2>
+        <div class="grid">
+          <form data-method="updateAdmin"><h3>update_admin</h3><button>Send</button></form>
+          <form data-method="withdrawPendingFees"><h3>withdraw_pending_fees</h3><button>Send</button></form>
+          <form data-method="giveUpPendingFees"><h3>give_up_pending_fees</h3><input name="maxAmountToGiveUp" placeholder="max_amount_to_give_up" required /><button>Send</button></form>
+        </div>
+      </section>
+
+      <section>
+        <h2>Activity</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

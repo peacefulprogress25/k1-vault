@@ -181,6 +181,43 @@ pub mod kamino_vault {
         handlers::handler_strategy_admin::remove_strategy(ctx, strategy_id)
     }
 
+    pub fn update_strategy_oracle(
+        ctx: Context<ManageStrategy>,
+        strategy_id: Pubkey,
+        oracle_price_feed: Pubkey,
+        oracle_feed_id: [u8; 32],
+        strategy_token_mint: Pubkey,
+        token_decimals: u8,
+        withdraw_priority: u16,
+        max_oracle_conf_bps: u16,
+    ) -> Result<()> {
+        handlers::handler_strategy_admin::update_strategy_oracle(
+            ctx,
+            strategy_id,
+            oracle_price_feed,
+            oracle_feed_id,
+            strategy_token_mint,
+            token_decimals,
+            withdraw_priority,
+            max_oracle_conf_bps,
+        )
+    }
+
+    pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
+        handlers::handler_strategy_admin::rebalance_vault(ctx)
+    }
+
+    pub fn refresh_strategy_nav(
+        ctx: Context<RefreshStrategyNav>,
+        strategy_id: Pubkey,
+        max_price_age_sec: u64,
+    ) -> Result<()> {
+        handlers::handler_refresh_strategy_nav::refresh_strategy_nav(
+            ctx,
+            strategy_id,
+            max_price_age_sec,
+        )
+    }
     pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
         handlers::handler_strategy_admin::rebalance_vault(ctx)
     }

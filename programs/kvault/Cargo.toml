@@ -52,3 +52,5 @@ kamino_lending = { git = "https://github.com/Kamino-Finance/klend.git", features
 # Only required when serializing to market config to JSON and in tests
 serde = { workspace = true, optional = true }
 
+
+pyth-solana-receiver-sdk = "0.3.2"
