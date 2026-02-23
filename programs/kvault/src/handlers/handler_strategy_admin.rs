@@ -43,6 +43,9 @@ pub fn add_strategy(
         last_nav_timestamp: 0,
         oracle_price_feed: Pubkey::default(),
         oracle_feed_id: [0; 32],
+        strategy_token_mint: Pubkey::default(),
+        max_oracle_conf_bps: 500,
+        _oracle_padding: [0; 6],
     };
     vault.strategy_count = vault.get_strategies_count() as u64;
 
@@ -83,8 +86,10 @@ pub fn update_strategy_oracle(
     strategy_id: Pubkey,
     oracle_price_feed: Pubkey,
     oracle_feed_id: [u8; 32],
+    strategy_token_mint: Pubkey,
     token_decimals: u8,
     withdraw_priority: u16,
+    max_oracle_conf_bps: u16,
 ) -> Result<()> {
     let vault = &mut ctx.accounts.vault_state.load_mut()?;
     require_keys_eq!(ctx.accounts.signer.key(), vault.vault_admin_authority);
@@ -94,8 +99,10 @@ pub fn update_strategy_oracle(
         .ok_or(KaminoVaultError::StrategyNotFound)?;
     vault.strategies[idx].oracle_price_feed = oracle_price_feed;
     vault.strategies[idx].oracle_feed_id = oracle_feed_id;
+    vault.strategies[idx].strategy_token_mint = strategy_token_mint;
     vault.strategies[idx].token_decimals = token_decimals;
     vault.strategies[idx].withdraw_priority = withdraw_priority;
+    vault.strategies[idx].max_oracle_conf_bps = max_oracle_conf_bps;
 
     Ok(())
 }
@@ -148,7 +155,6 @@ pub fn rebalance_vault(ctx: Context<ManageStrategy>) -> Result<()> {
                 .checked_add(alloc)
                 .ok_or(KaminoVaultError::MathOverflow)?;
             vault.strategies[idx].last_nav = u128::from(vault.strategies[idx].invested_amount);
-            vault.strategies[idx].last_nav_timestamp = now_ts;
             vault.strategies[idx].last_nav_timestamp = now_ts;
             token_available = token_available
                 .checked_sub(alloc)

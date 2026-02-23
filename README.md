@@ -59,3 +59,9 @@ User-facing flows currently exposed in the dashboard:
 - `withdraw_from_available(shares_amount)` for liquid-only redemption path.
 
 Note: user instructions require more accounts than strategy-admin methods (vault/user token ATAs, share mint/accounts, authority/token programs, and reserve-related remaining accounts where applicable). The user page supports these via JSON account inputs in the user section.
+
+
+## Phase 1/2 hardening updates
+
+- `refresh_strategy_nav` now reads strategy token balance from a real token account in accounts context instead of trusting a caller-supplied amount.
+- Added oracle confidence guard (`max_oracle_conf_bps`) and per-strategy token mint binding for NAV updates.

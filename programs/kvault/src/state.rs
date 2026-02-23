@@ -91,6 +91,7 @@ impl GlobalConfig {
     }
 }
 
+static_assertions::const_assert_eq!(0, std::mem::size_of::<VaultState>() % 16);
 #[account(zero_copy)]
 #[derive(AnchorDeserialize, PartialEq, Eq)]
 pub struct VaultState {
@@ -590,6 +591,9 @@ pub struct StrategyEntry {
     pub last_nav_timestamp: u64,
     pub oracle_price_feed: Pubkey,
     pub oracle_feed_id: [u8; 32],
+    pub strategy_token_mint: Pubkey,
+    pub max_oracle_conf_bps: u16,
+    pub _oracle_padding: [u8; 6],
 }
 
 impl Default for StrategyEntry {
@@ -608,6 +612,9 @@ impl Default for StrategyEntry {
             last_nav_timestamp: 0,
             oracle_price_feed: Pubkey::default(),
             oracle_feed_id: [0; 32],
+            strategy_token_mint: Pubkey::default(),
+            max_oracle_conf_bps: 500,
+            _oracle_padding: [0; 6],
         }
     }
 }

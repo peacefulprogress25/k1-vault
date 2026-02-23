@@ -74,11 +74,11 @@ document.querySelectorAll('form').forEach((form) => {
       } else if (method === 'removeStrategy') {
         await send('removeStrategy', [toPk(fd.get('strategyId'))], { signer, vaultState });
       } else if (method === 'updateStrategyOracle') {
-        await send('updateStrategyOracle', [toPk(fd.get('strategyId')), toPk(fd.get('oraclePriceFeed')), hexToBytes32(fd.get('oracleFeedId')), Number(fd.get('tokenDecimals')), Number(fd.get('withdrawPriority'))], { signer, vaultState });
+        await send('updateStrategyOracle', [toPk(fd.get('strategyId')), toPk(fd.get('oraclePriceFeed')), hexToBytes32(fd.get('oracleFeedId')), toPk(fd.get('strategyTokenMint')), Number(fd.get('tokenDecimals')), Number(fd.get('withdrawPriority')), Number(fd.get('maxOracleConfBps'))], { signer, vaultState });
       } else if (method === 'rebalanceVault') {
         await send('rebalanceVault', [], { signer, vaultState });
       } else if (method === 'refreshStrategyNav') {
-        await send('refreshStrategyNav', [toPk(fd.get('strategyId')), parseU64(fd.get('strategyTokenBalance')), parseU64(fd.get('maxPriceAgeSec'))], { signer, vaultState, priceUpdate: toPk(fd.get('priceUpdate')) });
+        await send('refreshStrategyNav', [toPk(fd.get('strategyId')), parseU64(fd.get('maxPriceAgeSec'))], { signer, vaultState, priceUpdate: toPk(fd.get('priceUpdate')), strategyTokenAccount: toPk(fd.get('strategyTokenAccount')), tokenProgram: toPk(fd.get('tokenProgram')) });
       } else if (method === 'updateAdmin') {
         await send('updateAdmin', [], { adminAuthority: signer, vaultState });
       } else if (method === 'withdrawPendingFees') {

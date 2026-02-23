@@ -186,16 +186,20 @@ pub mod kamino_vault {
         strategy_id: Pubkey,
         oracle_price_feed: Pubkey,
         oracle_feed_id: [u8; 32],
+        strategy_token_mint: Pubkey,
         token_decimals: u8,
         withdraw_priority: u16,
+        max_oracle_conf_bps: u16,
     ) -> Result<()> {
         handlers::handler_strategy_admin::update_strategy_oracle(
             ctx,
             strategy_id,
             oracle_price_feed,
             oracle_feed_id,
+            strategy_token_mint,
             token_decimals,
             withdraw_priority,
+            max_oracle_conf_bps,
         )
     }
 
@@ -206,13 +210,11 @@ pub mod kamino_vault {
     pub fn refresh_strategy_nav(
         ctx: Context<RefreshStrategyNav>,
         strategy_id: Pubkey,
-        strategy_token_balance: u64,
         max_price_age_sec: u64,
     ) -> Result<()> {
         handlers::handler_refresh_strategy_nav::refresh_strategy_nav(
             ctx,
             strategy_id,
-            strategy_token_balance,
             max_price_age_sec,
         )
     }
@@ -323,6 +325,9 @@ pub enum KaminoVaultError {
 
     #[msg("Oracle price is invalid or stale")]
     OraclePriceInvalid,
+
+    #[msg("Oracle confidence is too high for this strategy")]
+    OracleConfidenceTooHigh,
 
     #[msg("Deposited amount is below minimum")]
     DepositAmountBelowMinimum,
